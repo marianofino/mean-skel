@@ -7,8 +7,9 @@
         </a>
       </div>
       <ul class="nav navbar-nav">
-        <li><a href="/some-path"><span class="glyphicon glyphicon-user"></span> Some option</a></li>
-      </ul>
+        <li><a href="/agenda"><span class="glyphicon glyphicon-time"></span> Agenda</a></li>
+        <li><a href="/my_events"><span class="glyphicon glyphicon-book"></span> My Events</a></li>
+      </ul><a href="/new_event" class="btn btn-primary navbar-btn"><span class="glyphicon glyphicon-cog"></span> New Event</a>
       <ul class="nav navbar-nav navbar-right">
         <li><a href="/user">Hello {{main.auth.getCurrentUser().firstname}} {{main.auth.getCurrentUser().lastname}}!</a></li>
         <li><a href="#" ng-click="main.doLogout()">Logout</a></li>

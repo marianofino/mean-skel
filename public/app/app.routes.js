@@ -44,6 +44,33 @@ angular.module("app.routes", ["ngRoute"])
           }
       })
 
+      .when("/agenda", {
+        templateUrl: "app/views/mockup/agenda.html",
+        controller: "userEditController",
+        controllerAs: "user",
+        resolve: {
+            auth: isAuthenticated
+          }
+      })
+
+      .when("/my_events", {
+        templateUrl: "app/views/mockup/myEvents.html",
+        controller: "userEditController",
+        controllerAs: "user",
+        resolve: {
+            auth: isAuthenticated
+          }
+      })
+
+      .when("/new_event", {
+        templateUrl: "app/views/mockup/newEvent.html",
+        controller: "userEditController",
+        controllerAs: "user",
+        resolve: {
+            auth: isAuthenticated
+          }
+      })
+
       .otherwise({
           redirectTo: '/home'
       });
