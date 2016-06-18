@@ -1,6 +1,7 @@
 var factory = require('factory-girl'),
 	MongooseAdapter = require('factory-girl-mongoose').MongooseAdapter,
 	User = require('../app/models/user'),
+	Event = require('../app/models/event'),
 	faker = require('faker');
 
 factory.setAdapter(MongooseAdapter);
@@ -13,8 +14,33 @@ var register = function() {
 		},
 		password: faker.internet.password(),
 		firstname: faker.name.firstName(),
-		lastname: faker.name.lastName()
+		lastname: faker.name.lastName(),
+    invitations: []
 	});
+
+  // TODO: change mongoose promise
+	// Event factory
+	factory.define('event', Event, {
+		date: faker.date.future(),
+		title: faker.lorem.sentence(),
+		description: faker.lorem.paragraph(),
+    admin: factory.assoc('user'),
+    guests: []
+	});
+
+  // Guest sub-document factory (no model, just schema)
+  factory.setAdapter(new factory.ObjectAdapter(), 'guest');
+	factory.define('guest', {}, {
+    user: factory.assoc('user')
+	});
+
+  // Invitation sub-document factory (no model, just schema)
+  factory.setAdapter(new factory.ObjectAdapter(), 'invitation');
+	factory.define('invitation', {}, {
+    event: factory.assoc('event'),
+    date: faker.date.future()
+	});
+
 }
 
 module.exports.register = register;

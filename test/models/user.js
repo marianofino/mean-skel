@@ -47,6 +47,29 @@ describe('User', function () {
       });
     });
 
+    describe('Valid Invitation', function () {
+      var validInvitation = null;
+
+      // Create an invitation and store it in validInvitation object
+      before(function(done){
+        // Create valid invitation
+        factory.build("invitation", function (error, invitation) {
+          factory.create("user", {invitations: [ invitation ]}, function (error, user) {
+            if (!error)
+              validInvitation = user.invitations[0];
+            else
+              throw error;
+
+            done();
+          });
+        });
+      });
+
+      it('has a default action taken equal to 0', function () {
+        expect(validInvitation.action_taken).to.equal(0);
+      });
+
+    });
   });
 
   describe('Invalid User', function () {
@@ -124,6 +147,60 @@ describe('User', function () {
         done();
       });
     });
-  });
 
+    describe('Invalid Invitation', function () {
+
+      it('is invalid without date/time', function (done) {
+        factory.build("invitation", function (error, invitation) {
+          invitation.date = null;
+          factory.create("user", {invitations: [ invitation ]}, function (error, user) {
+            expect(error).to.exist;
+            date_error = error.errors['invitations.0.date'];
+            expect(date_error.message).to.equal("Date and time are required.");
+            done();
+          });
+        });
+      });
+
+      it('is invalid without Event reference', function (done) {
+        factory.build("invitation", function (error, invitation) {
+          invitation.event = null;
+          factory.create("user", {invitations: [ invitation ]}, function (error, user) {
+            expect(error).to.exist;
+            event_error = error.errors['invitations.0.event'];
+            expect(event_error.message).to.equal("Event is required.");
+            done();
+          });
+        });
+      });
+
+      it('is invalid with action id greater than range [0,2]', function (done) {
+        factory.build("invitation", function (error, invitation) {
+          invitation.action_taken = 3;
+          factory.create("user", {invitations: [ invitation ]}, function (error, user) {
+            expect(error).to.exist;
+            action_error = error.errors['invitations.0.action_taken'];
+            expect(action_error.kind).to.equal("max");
+            expect(action_error.message).to.equal("Invalid guest action.");
+            done();
+          });
+        });
+      });
+
+      it('is invalid with action id lower than range [0,2]', function (done) {
+        factory.build("invitation", function (error, invitation) {
+          invitation.action_taken = -1;
+          factory.create("user", {invitations: [ invitation ]}, function (error, user) {
+            expect(error).to.exist;
+            action_error = error.errors['invitations.0.action_taken'];
+            expect(action_error.kind).to.equal("min");
+            expect(action_error.message).to.equal("Invalid guest action.");
+            done();
+          });
+        });
+      });
+
+    });
+
+  });
 });

@@ -31,6 +31,11 @@ var UserSchema = new Schema({
     path: String,
     url: String
   },
+  invitations: [{
+    date: { type: Date, required: "Date and time are required.", index: true },
+    action_taken: { type: Number, default: 0, min: [0, "Invalid guest action."], max: [2, "Invalid guest action."] },
+    event: { type: Schema.Types.ObjectId, ref: "Event", required: "Event is required." }
+  }],
   created_at: { type: Date, default: Date.now }
 });
 
