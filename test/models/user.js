@@ -150,6 +150,16 @@ describe('User', function () {
 
     describe('Invalid Invitation', function () {
 
+      it('is removed if there is already an invitation to the same event', function (done) {
+        factory.build("invitation", function (error, invitation) {
+          factory.create("user", {invitations: [ invitation, invitation ]}, function (error, user) {
+            expect(error).to.not.exist;
+            expect(user.invitations).to.have.lengthOf(1);
+            done();
+          });
+        });
+      });
+
       it('is invalid without date/time', function (done) {
         factory.build("invitation", function (error, invitation) {
           invitation.date = null;

@@ -24,20 +24,20 @@ var register = function() {
 		date: faker.date.future(),
 		title: faker.lorem.sentence(),
 		description: faker.lorem.paragraph(),
-    admin: factory.assoc('user'),
+    admin: factory.assoc('user', '_id'),
     guests: []
 	});
 
   // Guest sub-document factory (no model, just schema)
   factory.setAdapter(new factory.ObjectAdapter(), 'guest');
 	factory.define('guest', {}, {
-    user: factory.assoc('user')
+    user: factory.assoc('user', '_id')
 	});
 
   // Invitation sub-document factory (no model, just schema)
   factory.setAdapter(new factory.ObjectAdapter(), 'invitation');
 	factory.define('invitation', {}, {
-    event: factory.assoc('event'),
+    event: factory.assoc('event', '_id'),
     date: faker.date.future()
 	});
 

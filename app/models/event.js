@@ -16,5 +16,20 @@ var EventSchema = new Schema({
   created_at: { type: Date, default: Date.now }
 });
 
+// silently drop guest if there is another with same User ref
+EventSchema.pre("validate", function(next) {
+  // array of user ids
+  var userRefs = this.guests.map(function (elem) {
+    return elem.user;
+  });
+
+  // remove duplicate ids
+  this.guests = this.guests.filter(function (elem, index, self) {
+    return index == userRefs.indexOf(elem.user);
+  });
+
+  next();
+});
+
 // TODO: when this grows modulariwe to another file
 module.exports = mongoose.model("Event", EventSchema);

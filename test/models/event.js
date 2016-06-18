@@ -66,6 +66,16 @@ describe('Event', function () {
 
     describe('Invalid Guest', function () {
 
+      it('is removed if it\'s already a guest in the same event', function (done) {
+        factory.build("guest", function (error, guest) {
+          factory.create("event", {guests: [ guest, guest ]}, function (error, event) {
+            expect(error).to.not.exist;
+            expect(event.guests).to.have.lengthOf(1);
+            done();
+          });
+        });
+      });
+
       it('is invalid with action id greater than range [0,2]', function (done) {
         factory.build("guest", function (error, guest) {
           guest.action_taken = 3;

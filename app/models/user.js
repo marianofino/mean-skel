@@ -129,4 +129,19 @@ UserSchema.statics.activateAccount = function(token, callback) {
   });
 };
 
+// silently drop invitation if there is another with same Event ref
+UserSchema.pre("validate", function(next) {
+  // array of event ids
+  var eventRefs = this.invitations.map(function (elem) {
+    return elem.event;
+  });
+
+  // remove duplicate ids
+  this.invitations = this.invitations.filter(function (elem, index, self) {
+    return index == eventRefs.indexOf(elem.event);
+  });
+
+  next();
+});
+
 module.exports = mongoose.model("User", UserSchema);
