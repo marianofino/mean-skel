@@ -4,6 +4,32 @@ const expect = require('chai').expect,
 describe('Event', function () {
 
   describe('Valid Event', function () {
+    var validEvent = null;
+
+    // Create an event and store it in validEvent object
+    before(function(done){
+      // Create valid event
+      factory.create("event", function (error, event) {
+          if (!error)
+            validEvent = event;
+          else
+            throw error;
+
+          done();
+      });
+    });
+
+    it('can\'t change its date or time once created', function (done) {
+      newDate = null;
+      // pick a new date other than the one saved
+      while ((newDate = new Date()).getTime() === validEvent.date.getTime());
+      validEvent.date = newDate;
+      validEvent.save(function (error, updatedEvent) {
+        expect(error).to.exist;
+        expect(error.message).to.equal('Date cannot be modified.');
+        done();
+      });
+    });
 
     describe('Valid Guest', function () {
       var validGuest = null;
@@ -23,25 +49,34 @@ describe('Event', function () {
         });
       });
 
-      it('has a default action taken equal to 0', function () {
-        expect(validGuest.action_taken).to.equal(0);
+      it('does not answer by default', function () {
+        expect(validGuest.status.answered).to.be.false;
+      });
+
+      it('does not attend by default', function () {
+        expect(validGuest.status.attending).to.be.false;
       });
 
     });
 
-    // TODO: validate internal methods and automatic actions (send email, forbid change date, etc.)
-
   });
 
   describe('Invalid Event', function () {
-    // TODO: invalidate past dates?
-    // TODO: invalidate wrong objects types (user, guests, dates, etc.)
 
     it('is invalid without date/time', function (done) {
       factory.create("event", {date: null}, function (error, event) {
         expect(error).to.exist;
         date_error = error.errors.date;
         expect(date_error.message).to.equal("Date and time are required.");
+        done();
+      });
+    });
+
+    it('is invalid without description', function (done) {
+      factory.create("event", {description: null}, function (error, event) {
+        expect(error).to.exist;
+        description_error = error.errors.description;
+        expect(description_error.message).to.equal("Description is required.");
         done();
       });
     });
@@ -66,37 +101,11 @@ describe('Event', function () {
 
     describe('Invalid Guest', function () {
 
-      it('is removed if it\'s already a guest in the same event', function (done) {
+      it('is removed if it is repeated', function (done) {
         factory.build("guest", function (error, guest) {
           factory.create("event", {guests: [ guest, guest ]}, function (error, event) {
             expect(error).to.not.exist;
             expect(event.guests).to.have.lengthOf(1);
-            done();
-          });
-        });
-      });
-
-      it('is invalid with action id greater than range [0,2]', function (done) {
-        factory.build("guest", function (error, guest) {
-          guest.action_taken = 3;
-          factory.create("event", {guests: [ guest ]}, function (error, event) {
-            expect(error).to.exist;
-            action_error = error.errors['guests.0.action_taken'];
-            expect(action_error.kind).to.equal("max");
-            expect(action_error.message).to.equal("Invalid guest action.");
-            done();
-          });
-        });
-      });
-
-      it('is invalid with action id lower than range [0,2]', function (done) {
-        factory.build("guest", function (error, guest) {
-          guest.action_taken = -1;
-          factory.create("event", {guests: [ guest ]}, function (error, event) {
-            expect(error).to.exist;
-            action_error = error.errors['guests.0.action_taken'];
-            expect(action_error.kind).to.equal("min");
-            expect(action_error.message).to.equal("Invalid guest action.");
             done();
           });
         });

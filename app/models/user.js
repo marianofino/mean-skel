@@ -33,7 +33,10 @@ var UserSchema = new Schema({
   },
   invitations: [{
     date: { type: Date, required: "Date and time are required.", index: true },
-    action_taken: { type: Number, default: 0, min: [0, "Invalid guest action."], max: [2, "Invalid guest action."] },
+    status: { 
+      answered: { type: Boolean, default: false },
+      attending: { type: Boolean, default: false }
+    },
     event: { type: Schema.Types.ObjectId, ref: "Event", required: "Event is required." }
   }],
   created_at: { type: Date, default: Date.now }
@@ -121,6 +124,30 @@ UserSchema.methods.asJson = function() {
   return response_user;
 };
 
+UserSchema.methods.answerInvitation = function(invitationId, answer, callback) {
+  // return error if no invitation passed
+  var invitation = this.invitations.id(invitationId);
+  if (invitation === null)
+    return callback(new Error('Wrong invitation id passed.'));
+
+  if (!invitation.status.answered) {
+    invitation.status.answered = true;
+    // cast to boolean
+    invitation.status.attending = !!answer;
+    return this.save(callback);
+  }
+
+  callback(new Error('User has already answered this invitation.'));
+};
+
+UserSchema.methods.attend = function(invitationId, callback) {
+  this.answerInvitation(invitationId, true, callback);
+};
+
+UserSchema.methods.decline = function(invitationId, callback) {
+  this.answerInvitation(invitationId, false, callback);
+};
+
 UserSchema.statics.activateAccount = function(token, callback) {
   // Activate account and change token
   var new_token = shortid.generate();
@@ -137,8 +164,8 @@ UserSchema.pre("validate", function(next) {
   });
 
   // remove duplicate ids
-  this.invitations = this.invitations.filter(function (elem, index, self) {
-    return index == eventRefs.indexOf(elem.event);
+  this.invitations = this.invitations.filter(function (invitation, index) {
+    return index == eventRefs.indexOf(invitation.event);
   });
 
   next();

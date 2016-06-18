@@ -47,6 +47,79 @@ describe('User', function () {
       });
     });
 
+    it('can\'t change a fake invitation', function (done) {
+      factory.build("invitation", function (error, invitation) {
+        factory.create("user", {invitations: [ invitation ]}, function (error, user) {
+          invitationId = 0;
+          // pick a fake invitation id
+          while (++invitationId == user.invitations[0]._id);
+          user.attend(invitationId, function (error, updatedUser) {
+            expect(error).to.exist;
+            expect(error.message).to.equal("Wrong invitation id passed.");
+            done();
+          });
+        });
+      });
+    });
+
+    it('can\'t change an invitation answer from attend to decline', function (done) {
+      factory.build("invitation", function (error, invitation) {
+        factory.create("user", {invitations: [ invitation ]}, function (error, user) {
+          invitationId = user.invitations[0]._id;
+          user.attend(invitationId, function (error, updatedUser) {
+            updatedUser.decline(invitationId, function (error, updatedUser) {
+              expect(error).to.exist;
+              expect(error.message).to.equal("User has already answered this invitation.");
+              done();
+            });
+          });
+        });
+      });
+    });
+
+    it('can\'t change invitation answer from decline to attend', function (done) {
+      factory.build("invitation", function (error, invitation) {
+        factory.create("user", {invitations: [ invitation ]}, function (error, user) {
+          invitationId = user.invitations[0]._id;
+          user.decline(invitationId, function (error, updatedUser) {
+            updatedUser.attend(invitationId, function (error, updatedUser) {
+              expect(error).to.exist;
+              expect(error.message).to.equal("User has already answered this invitation.");
+              done();
+            });
+          });
+        });
+      });
+    });
+
+    it('can set invitation answer to attend for the first time', function (done) {
+      factory.build("invitation", function (error, invitation) {
+        factory.create("user", {invitations: [ invitation ]}, function (error, user) {
+          invitationId = user.invitations[0]._id;
+          user.attend(invitationId, function (error, updatedUser) {
+            expect(error).to.not.exist;
+            expect(updatedUser.invitations[0].status.answered).to.be.true;
+            expect(updatedUser.invitations[0].status.attending).to.be.true;
+            done();
+          });
+        });
+      });
+    });
+
+    it('can set invitation answer to decline for the first time', function (done) {
+      factory.build("invitation", function (error, invitation) {
+        factory.create("user", {invitations: [ invitation ]}, function (error, user) {
+          invitationId = user.invitations[0]._id;
+          user.decline(invitationId, function (error, updatedUser) {
+            expect(error).to.not.exist;
+            expect(updatedUser.invitations[0].status.answered).to.be.true;
+            expect(updatedUser.invitations[0].status.attending).to.be.false;
+            done();
+          });
+        });
+      });
+    });
+
     describe('Valid Invitation', function () {
       var validInvitation = null;
 
@@ -65,8 +138,12 @@ describe('User', function () {
         });
       });
 
-      it('has a default action taken equal to 0', function () {
-        expect(validInvitation.action_taken).to.equal(0);
+      it('is not answered by default', function () {
+        expect(validInvitation.status.answered).to.be.false;
+      });
+
+      it('is not attending by default', function () {
+        expect(validInvitation.status.attending).to.be.false;
       });
 
     });
@@ -150,7 +227,7 @@ describe('User', function () {
 
     describe('Invalid Invitation', function () {
 
-      it('is removed if there is already an invitation to the same event', function (done) {
+      it('is removed if it is repeated', function (done) {
         factory.build("invitation", function (error, invitation) {
           factory.create("user", {invitations: [ invitation, invitation ]}, function (error, user) {
             expect(error).to.not.exist;
@@ -184,33 +261,6 @@ describe('User', function () {
         });
       });
 
-      it('is invalid with action id greater than range [0,2]', function (done) {
-        factory.build("invitation", function (error, invitation) {
-          invitation.action_taken = 3;
-          factory.create("user", {invitations: [ invitation ]}, function (error, user) {
-            expect(error).to.exist;
-            action_error = error.errors['invitations.0.action_taken'];
-            expect(action_error.kind).to.equal("max");
-            expect(action_error.message).to.equal("Invalid guest action.");
-            done();
-          });
-        });
-      });
-
-      it('is invalid with action id lower than range [0,2]', function (done) {
-        factory.build("invitation", function (error, invitation) {
-          invitation.action_taken = -1;
-          factory.create("user", {invitations: [ invitation ]}, function (error, user) {
-            expect(error).to.exist;
-            action_error = error.errors['invitations.0.action_taken'];
-            expect(action_error.kind).to.equal("min");
-            expect(action_error.message).to.equal("Invalid guest action.");
-            done();
-          });
-        });
-      });
-
     });
-
   });
 });
