@@ -25,6 +25,8 @@ function setup(app, handlers) {
   userRouter.use(token_authentication);
   userRouter.put("/", handlers.users.updateCurrentUser);
 
+  userRouter.get("/events", handlers.users.getEventAdminList);
+
   app.use("/api/user", userRouter);
 
   var guestsRouter = express.Router();

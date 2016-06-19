@@ -226,7 +226,6 @@ function updateCurrentUser(req, res) {
   });
 }
 
-
 /**
  * @api {get} /api/guests List users
  * @apiName get_list
@@ -240,7 +239,7 @@ function updateCurrentUser(req, res) {
  *    {
  *      guests: [
  *        {
- *          _id: user._id,
+ *          _id: "5766c207de961b2436fd9605",
  *          firstname: "John",
  *          lastname: "Doe"
  *        },
@@ -263,6 +262,56 @@ function getList(req, res) {
 
       return res.json({ guests: users });
     });
+}
+
+/**
+ * @api {get} /api/user/events List users
+ * @apiName get_event_admin_list
+ * @apiGroup Users
+ * @apiVersion 0.1.0
+ *
+ * @apiHeader {String} x-access-token Users unique access token
+ *
+ * @apiSuccessExample Success-Response
+ *    HTTP/1.1 200 OK
+ *    {
+ *      events: [
+ *        {
+ *          _id: "5766c207de961b2436fd9605",
+ *          title: "Birthday",
+ *          description: "At my house :)",
+ *          date: "2017-05-01T08:15:44.926Z"
+ *        }
+ *        ...
+ *      ]
+ *    }
+ */
+function getEventAdminList(req, res) {
+  var events;
+
+  User.
+    findById(req.current_user._id).
+    select({
+      admin_events: 1
+    }).
+    populate({
+      path: 'admin_events',
+      select: {
+        _id: 1,
+        title: 1,
+        description: 1,
+        date: 1
+      }
+    }).
+    exec().
+    then(function (events) {
+      res.json({ events: events.admin_events })
+    }).
+    catch(function (error) {
+      // something bad happened if error
+      res.status(500).send(error);
+    });
+
 }
 
 /**
@@ -315,3 +364,4 @@ exports.createUser = createUser;
 exports.updateCurrentUser = updateCurrentUser;
 exports.activateAccount = activateAccount;
 exports.getList = getList;
+exports.getEventAdminList = getEventAdminList;
