@@ -1,4 +1,5 @@
 const expect = require('chai').expect,
+      User = require('../../app/models/user'),
       factory = require('factory-girl');
 
 describe('Event', function () {
@@ -7,19 +8,16 @@ describe('Event', function () {
     var validEvent = null;
 
     // Create an event and store it in validEvent object
-    before(function(done){
-      // Create valid event
+    before('primero', function(done){
       factory.create("event", function (error, event) {
-          if (!error)
-            validEvent = event;
-          else
-            throw error;
+        if (error) return done(error);
 
-          done();
+        validEvent = event;
+        done();
       });
     });
 
-    it('can\'t change its date or time once created', function (done) {
+    it('can\'t be changed of date or time once created', function (done) {
       newDate = null;
       // pick a new date other than the one saved
       while ((newDate = new Date()).getTime() === validEvent.date.getTime());
@@ -31,20 +29,49 @@ describe('Event', function () {
       });
     });
 
+    it('is saved in User admin ref', function (done) {
+      User.
+        findById(validEvent.admin).
+        select({ _id: 1 }).
+        exec().
+        then(function (user) {
+          expect(user._id.toString()).to.equal(validEvent.admin.toString());
+          done();
+        }).
+        catch(done);
+    });
+
     describe('Valid Guest', function () {
+      var validUser = null;
       var validGuest = null;
+      var validEvent = null;
 
-      // Create a guest and store it in validGuest object
+      // Create an event and store it in validEvent object
       before(function(done){
-        // Create valid guest
-        factory.build("guest", function (error, guest) {
-          factory.create("event", {guests: [ guest ]}, function (error, event) {
-            if (!error)
-              validGuest = event.guests[0];
-            else
-              throw error;
+        // Create valid event
+        factory.create("event", function (error, event) {
+          if (error) return done(error);
 
-            done();
+          factory.create('user', function (error, user) {
+            if (error) return done(error);
+
+            validEvent = event;
+            validUser = user;
+
+            factory.build("guest", { user: validUser._id }, function (error, guest) {
+              if (error) return done(error);
+
+              validEvent.guests.addToSet(guest);
+              validEvent.
+                save().
+                then(function (event) {
+                  validGuest = event.guests[0];
+                  validEvent = event;
+                  done();
+                }).
+                catch(done);
+
+            });
           });
         });
       });
@@ -55,6 +82,41 @@ describe('Event', function () {
 
       it('does not attend by default', function () {
         expect(validGuest.status.attending).to.be.false;
+      });
+
+      it('creates an invitation in the related user when created', function (done) {
+        // saved user doesn't have invitation
+        expect(validUser.invitations).to.be.empty;
+        // updated user has it
+        User.
+          findById(validUser._id).
+          select({ invitations: 1 }).
+          exec().
+          then(function (user) {
+            // update validUser
+            validUser = user;
+            expect(validUser.invitations).not.to.be.empty;
+            expect(validUser.invitations[0].event.toString()).to.equal(validEvent._id.toString());
+            done();
+          }).
+          catch(done);
+      });
+
+      it('removes an invitation in the related user when removed', function (done) {
+        // use invitation from previous spec
+        expect(validUser.invitations).to.have.lengthOf(1);
+        // remove guest
+        validGuest.remove();
+        // updated user has it
+        User.
+          findById(validUser._id).
+          select({ invitations: 1 }).
+          exec().
+          then(function (user) {
+            expect(user.invitations).to.be.empty;
+            done();
+          }).
+          catch(done);
       });
 
     });

@@ -48,7 +48,8 @@ app.use(express.static(path.join(__dirname, "/public")));
 
 // Request Handlers
 var handlers = {
-  users: require('./app/handlers/usersHandler')
+  users: require('./app/handlers/usersHandler'),
+  events: require('./app/handlers/eventsHandler')
 };
 
 // Application routes

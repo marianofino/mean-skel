@@ -17,5 +17,9 @@ angular.module("services")
 			return $http.post(config.api_url + "/users/activate/", userData);
 		};
 
+    userFactory.getGuests = function() {
+			return $http.get(config.api_url + "/guests/");
+    };
+
 		return userFactory;
 	}]);

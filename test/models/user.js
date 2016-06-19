@@ -47,103 +47,146 @@ describe('User', function () {
       });
     });
 
-    it('can\'t change a fake invitation', function (done) {
-      factory.build("invitation", function (error, invitation) {
-        factory.create("user", {invitations: [ invitation ]}, function (error, user) {
-          invitationId = 0;
-          // pick a fake invitation id
-          while (++invitationId == user.invitations[0]._id);
-          user.attend(invitationId, function (error, updatedUser) {
-            expect(error).to.exist;
-            expect(error.message).to.equal("Wrong invitation id passed.");
-            done();
-          });
-        });
-      });
-    });
-
-    it('can\'t change an invitation answer from attend to decline', function (done) {
-      factory.build("invitation", function (error, invitation) {
-        factory.create("user", {invitations: [ invitation ]}, function (error, user) {
-          invitationId = user.invitations[0]._id;
-          user.attend(invitationId, function (error, updatedUser) {
-            updatedUser.decline(invitationId, function (error, updatedUser) {
-              expect(error).to.exist;
-              expect(error.message).to.equal("User has already answered this invitation.");
-              done();
-            });
-          });
-        });
-      });
-    });
-
-    it('can\'t change invitation answer from decline to attend', function (done) {
-      factory.build("invitation", function (error, invitation) {
-        factory.create("user", {invitations: [ invitation ]}, function (error, user) {
-          invitationId = user.invitations[0]._id;
-          user.decline(invitationId, function (error, updatedUser) {
-            updatedUser.attend(invitationId, function (error, updatedUser) {
-              expect(error).to.exist;
-              expect(error.message).to.equal("User has already answered this invitation.");
-              done();
-            });
-          });
-        });
-      });
-    });
-
-    it('can set invitation answer to attend for the first time', function (done) {
-      factory.build("invitation", function (error, invitation) {
-        factory.create("user", {invitations: [ invitation ]}, function (error, user) {
-          invitationId = user.invitations[0]._id;
-          user.attend(invitationId, function (error, updatedUser) {
-            expect(error).to.not.exist;
-            expect(updatedUser.invitations[0].status.answered).to.be.true;
-            expect(updatedUser.invitations[0].status.attending).to.be.true;
-            done();
-          });
-        });
-      });
-    });
-
-    it('can set invitation answer to decline for the first time', function (done) {
-      factory.build("invitation", function (error, invitation) {
-        factory.create("user", {invitations: [ invitation ]}, function (error, user) {
-          invitationId = user.invitations[0]._id;
-          user.decline(invitationId, function (error, updatedUser) {
-            expect(error).to.not.exist;
-            expect(updatedUser.invitations[0].status.answered).to.be.true;
-            expect(updatedUser.invitations[0].status.attending).to.be.false;
-            done();
-          });
-        });
-      });
-    });
-
     describe('Valid Invitation', function () {
-      var validInvitation = null;
+      var rawInvitation = null;
 
-      // Create an invitation and store it in validInvitation object
+      // Build an invitation and store it in rawInvitation object
       before(function(done){
-        // Create valid invitation
         factory.build("invitation", function (error, invitation) {
-          factory.create("user", {invitations: [ invitation ]}, function (error, user) {
-            if (!error)
-              validInvitation = user.invitations[0];
-            else
-              throw error;
+          if (error) return done(error);
 
-            done();
-          });
+          rawInvitation = invitation;
+
+          done();
         });
       });
 
       it('is not answered by default', function () {
-        expect(validInvitation.status.answered).to.be.false;
+        factory.create("user", function (error, user) {
+          if (error) return done(error);
+
+          user.invitations.addToSet(rawInvitation);
+
+          user.save(function (error, user) {
+            if (error) return done(error);
+            expect(user.invitations[0].status.answered).to.be.false;
+          });
+        });
       });
 
       it('is not attending by default', function () {
-        expect(validInvitation.status.attending).to.be.false;
+        factory.create("user", function (error, user) {
+          if (error) return done(error);
+
+          user.invitations.addToSet(rawInvitation);
+
+          user.save(function (error, user) {
+            if (error) return done(error);
+            expect(user.invitations[0].status.attending).to.be.false;
+          });
+        });
+      });
+
+      it('can be set to attend for the first time', function (done) {
+        factory.create("user", function (error, user) {
+          if (error) return done(error);
+
+          user.invitations.addToSet(rawInvitation);
+
+          user.
+            save().
+            then(function (user) {
+              user.invitations[0].attend();
+              return user.save();
+            }).
+            then(function (user) {
+              expect(user.invitations[0].status.answered).to.be.true;
+              expect(user.invitations[0].status.attending).to.be.true;
+              done();
+            }).
+            catch(function (error) {
+              done(error);
+            });
+
+        });
+      });
+
+      it('can be set to decline for the first time', function (done) {
+        factory.create("user", function (error, user) {
+          if (error) return done(error);
+
+          user.invitations.addToSet(rawInvitation);
+
+          user.
+            save().
+            then(function (user) {
+              user.invitations[0].decline();
+              return user.save();
+            }).
+            then(function (user) {
+              expect(user.invitations[0].status.answered).to.be.true;
+              expect(user.invitations[0].status.attending).to.be.false;
+              done();
+            }).
+            catch(function (error) {
+              done(error);
+            });
+
+        });
+      });
+
+      it('can\'t be changed from attend to decline', function (done) {
+        factory.create("user", function (error, user) {
+          if (error) return done(error);
+
+          user.invitations.addToSet(rawInvitation);
+
+          user.
+            save().
+            then(function (user) {
+              user.invitations[0].attend();
+              return user.save();
+            }).
+            then(function (user) {
+              user.invitations[0].decline();
+              return user.save();
+            }).
+            catch(function (error) {
+              // TODO: it would be better to return ValidationError and catch by Error object
+              expect(error).to.exist;
+              expect(error.message).to.equal("User has already answered this invitation.");
+              done();
+            });
+
+        });
+
+      });
+
+      it('can\'t be changed from decline to attend', function (done) {
+        factory.create("user", function (error, user) {
+          if (error) return done(error);
+
+          user.invitations.addToSet(rawInvitation);
+
+          user.
+            save().
+            then(function (user) {
+              user.invitations[0].decline();
+              return user.save();
+            }).
+            then(function (user) {
+              user.invitations[0].attend();
+              return user.save();
+            }).
+            catch(function (error) {
+              // TODO: it would be better to return ValidationError and catch by Error object
+              expect(error).to.exist;
+              expect(error.message).to.equal("User has already answered this invitation.");
+              done();
+            });
+
+        });
+
       });
 
     });

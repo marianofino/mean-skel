@@ -252,9 +252,9 @@ describe('UsersHandler', function () {
   				})
   				.expect(404)
   				.end(function(err, res){
-  					nock.cleanAll();
-					done();
-				});;
+    					nock.cleanAll();
+					  done();
+				  });
 	    });
 
 
@@ -330,6 +330,52 @@ describe('UsersHandler', function () {
 					done();
 				});;
 	    });
+    });
+
+	describe('GET /api/guests', function () {
+    	var access_token;
+
+		  before(function(done){
+			  // Authenticate user
+			  request(server)
+      		.post('/api/users/authenticate')
+  				.send({ email: validUser.email, password: password })
+  				.end(function(err, res){
+				    access_token = res.body.token;
+				    done();
+			    });
+      });
+
+    	it('responds with status 403 if token is not present', function (done) {
+	    	request(server)
+	    		.get('/api/guests')
+	    		.expect('Content-Type', /json/)
+  				.expect(403, {
+					message: "No token provided."
+				}, done);
+	    });
+
+	    it('responds with status 403 if token is invalid', function (done) {
+	    	request(server)
+	    		.get('/api/guests')
+	    		.set('x-access-token', 'invalidtoken')
+	    		.expect('Content-Type', /json/)
+  				.expect(403, {
+					message: "Failed to authenticate token."
+				}, done);
+	    });
+
+	    it('responds with success if user list is retrieved', function (done) {
+	    	request(server)
+	    		.get('/api/guests')
+	    		.set('x-access-token', access_token)
+  				.expect('Content-Type', /json/)
+  				.expect(function(response){
+  					expect(response.body.guests).to.be.instanceof(Array);
+  				})
+  				.expect(200, done);
+	    });
+
     });
 
 });

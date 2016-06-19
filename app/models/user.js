@@ -1,5 +1,6 @@
 var mongoose = require("mongoose"),
   Schema = mongoose.Schema,
+  InvitationSchema = require('./subdocSchemas/invitation'),
   bcrypt = require("bcrypt-nodejs"),
   shortid = require('shortid'),
   mailer = require("../helpers/mailer"),
@@ -31,14 +32,8 @@ var UserSchema = new Schema({
     path: String,
     url: String
   },
-  invitations: [{
-    date: { type: Date, required: "Date and time are required.", index: true },
-    status: { 
-      answered: { type: Boolean, default: false },
-      attending: { type: Boolean, default: false }
-    },
-    event: { type: Schema.Types.ObjectId, ref: "Event", required: "Event is required." }
-  }],
+  invitations: [InvitationSchema],
+  admin_events: [{ type: Schema.Types.ObjectId, ref: "Event", required: "Event is required.", index: true }],
   created_at: { type: Date, default: Date.now }
 });
 
@@ -122,30 +117,6 @@ UserSchema.methods.asJson = function() {
                 picture: user.picture
               }
   return response_user;
-};
-
-UserSchema.methods.answerInvitation = function(invitationId, answer, callback) {
-  // return error if no invitation passed
-  var invitation = this.invitations.id(invitationId);
-  if (invitation === null)
-    return callback(new Error('Wrong invitation id passed.'));
-
-  if (!invitation.status.answered) {
-    invitation.status.answered = true;
-    // cast to boolean
-    invitation.status.attending = !!answer;
-    return this.save(callback);
-  }
-
-  callback(new Error('User has already answered this invitation.'));
-};
-
-UserSchema.methods.attend = function(invitationId, callback) {
-  this.answerInvitation(invitationId, true, callback);
-};
-
-UserSchema.methods.decline = function(invitationId, callback) {
-  this.answerInvitation(invitationId, false, callback);
 };
 
 UserSchema.statics.activateAccount = function(token, callback) {

@@ -1,5 +1,7 @@
-const mongoose = require("mongoose"),
-      Schema = mongoose.Schema;
+const mongoose = require('mongoose'),
+      Schema = mongoose.Schema,
+      User = require('./user'),
+      GuestSchema = require('./subdocSchemas/guest');
 
 // event schema
 var EventSchema = new Schema({
@@ -7,23 +9,57 @@ var EventSchema = new Schema({
   title: { type: String, trim: true, required: "Title is required." },
   description: { type: String, trim: true, required: "Description is required." },
   admin: { type: Schema.Types.ObjectId, ref: "User", required: "Admin user is required." },
-  guests: [{
-    status: { 
-      answered: { type: Boolean, default: false },
-      attending: { type: Boolean, default: false }
-    },
-    user: { type: Schema.Types.ObjectId, ref: "User", required: "Guest must have an associated user." }
-  }],
+  guests: [GuestSchema],
   created_at: { type: Date, default: Date.now }
 });
 
 // don't allow to edit date/time
 EventSchema.pre('save', function (next) {
   var error = null;
+
   if (!this.isNew && this.isModified('date'))
     error = new Error('Date cannot be modified.');
 
   next(error);
+});
+
+// save in admin User ref
+EventSchema.pre('save', function (next) {
+  var event = this;
+
+  if (!event.isNew)
+    return next();
+
+  if (this.isNew) {
+    User.
+      findOneAndUpdate( {
+        _id: event.admin
+      }, {
+        $addToSet: {
+          admin_events: event._id           
+        }
+      }).
+      exec().
+      then(function (user) {
+        next();
+      }).
+      // TODO: handle error in a better way.. Transactions would be nice
+      catch(next);
+  }
+
+});
+
+// fill guest sub-docs with event info
+EventSchema.pre('validate', function (next) {
+  var event = this;
+
+  // TODO: only if modified?
+  this.guests = this.guests.map(function (guest) {
+    guest.event = {_id: event._id, date: event.date};
+    return guest;
+  });
+
+  next();
 });
 
 // TODO: modularize this to a plugin
@@ -36,6 +72,7 @@ EventSchema.pre('validate', function(next) {
 
   // remove duplicate ids
   this.guests = this.guests.filter(function (elem, index, self) {
+    // TODO: check if subdoc is new
     return index == userRefs.indexOf(elem.user);
   });
 

@@ -23,11 +23,24 @@ function setup(app, handlers) {
   var userRouter = express.Router();
   // With Token authentication
   userRouter.use(token_authentication);
-  userRouter.put("/", handlers.users.updateCurrentUser)
+  userRouter.put("/", handlers.users.updateCurrentUser);
 
   app.use("/api/user", userRouter);
 
-// ########## More Routes ##########
+  var guestsRouter = express.Router();
+  // With Token authentication
+  guestsRouter.use(token_authentication);
+  guestsRouter.get("/", handlers.users.getList);
+
+  app.use("/api/guests", guestsRouter);
+
+// ########## Event Routes ##########
+
+  var eventsRouter = express.Router();
+  eventsRouter.use(token_authentication);
+  eventsRouter.post("/", handlers.events.createEvent);
+
+  app.use("/api/events", eventsRouter);
 
 };
 

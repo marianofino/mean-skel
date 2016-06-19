@@ -226,6 +226,45 @@ function updateCurrentUser(req, res) {
   });
 }
 
+
+/**
+ * @api {get} /api/guests List users
+ * @apiName get_list
+ * @apiGroup Users
+ * @apiVersion 0.1.0
+ *
+ * @apiHeader {String} x-access-token Users unique access token
+ *
+ * @apiSuccessExample Success-Response
+ *    HTTP/1.1 200 OK
+ *    {
+ *      guests: [
+ *        {
+ *          _id: user._id,
+ *          firstname: "John",
+ *          lastname: "Doe"
+ *        },
+ *        ...
+ *      ]
+ *    }
+ */
+function getList(req, res) {
+  var guests;
+
+  User.find()
+    .select({
+      _id: 1,
+      firstname: 1,
+      lastname: 1
+    })
+    .exec(function (error, users) {
+      // something bad happened if error
+      if (error) return res.status(500).send(error);
+
+      return res.json({ guests: users });
+    });
+}
+
 /**
  * @api {post} /api/users/activate Activate user
  * @apiName user_activate
@@ -275,3 +314,4 @@ exports.authenticate = authenticate;
 exports.createUser = createUser;
 exports.updateCurrentUser = updateCurrentUser;
 exports.activateAccount = activateAccount;
+exports.getList = getList;
