@@ -16,7 +16,6 @@ angular.module("services")
     return {
       setMessage: function(message, type) {
 				type = type || "success";
-        console.log(message);
         queue.push({ type: type, msg: message });
       },
       setErrors: function(data) {

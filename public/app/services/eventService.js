@@ -7,5 +7,10 @@ angular.module("services")
 			return $http.post(config.api_url + "/events/", eventData);
 		};
 
+		// get events for this admin
+		eventFactory.getAdminList = function() {
+			return $http.get(config.api_url + "/user/events/");
+		};
+
 		return eventFactory;
 	}]);

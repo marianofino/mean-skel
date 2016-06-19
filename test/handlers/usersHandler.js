@@ -332,6 +332,62 @@ describe('UsersHandler', function () {
 	    });
     });
 
+	describe('GET /api/user/events', function () {
+    	var access_token;
+      var validEvent = null;
+
+		  before(function(done){
+			  // Authenticate user
+			  request(server)
+      		.post('/api/users/authenticate')
+  				.send({ email: validUser.email, password: password })
+  				.end(function(err, res){
+				    access_token = res.body.token;
+
+            factory.create('event', {admin: validUser._id}, function (error, event) {
+              if (error) return done(error);
+
+              validEvent = event;
+
+				      done();
+            });
+
+			    });
+      });
+
+    	it('responds with status 403 if token is not present', function (done) {
+	    	request(server)
+	    		.get('/api/user/events')
+	    		.expect('Content-Type', /json/)
+  				.expect(403, {
+					message: "No token provided."
+				}, done);
+	    });
+
+	    it('responds with status 403 if token is invalid', function (done) {
+	    	request(server)
+	    		.get('/api/user/events')
+	    		.set('x-access-token', 'invalidtoken')
+	    		.expect('Content-Type', /json/)
+  				.expect(403, {
+					message: "Failed to authenticate token."
+				}, done);
+	    });
+
+	    it('responds with success if events list is retrieved', function (done) {
+	    	request(server)
+	    		.get('/api/user/events')
+	    		.set('x-access-token', access_token)
+  				.expect('Content-Type', /json/)
+  				.expect(function(response) {
+  					expect(response.body.events).to.be.lengthOf(1);
+  					expect(response.body.events[0]._id).to.be.equal(validEvent._id.toString());
+  				})
+  				.expect(200, done);
+	    });
+
+    });
+
 	describe('GET /api/guests', function () {
     	var access_token;
 

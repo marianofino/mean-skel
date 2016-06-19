@@ -73,4 +73,22 @@ angular.module("controllers")
 				});
 
     };
+  }])
+
+  .controller("eventListAdminController", ['Event', '$location', 'flash', 'config', function(Event, $location, flash, config) {
+    var vm = this;
+
+    vm.eventList = [];
+
+    // populate events
+    Event.getAdminList()
+      .then(function(response) {
+        vm.eventList = response.data.events.map(function (event) {
+          event.date = (new Date(event.date)).toLocaleString();
+          return event;
+        });
+      }, function(response) {
+			  flash.setErrors(response.data);
+		  });
+
   }]);
