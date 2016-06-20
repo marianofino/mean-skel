@@ -22,5 +22,10 @@ angular.module("services")
 			return $http.get(config.api_url + "/user/events/");
 		};
 
+		// cancel event
+		eventFactory.remove = function(eventId) {
+			return $http.delete(config.api_url + "/events/" + eventId);
+		};
+
 		return eventFactory;
 	}]);

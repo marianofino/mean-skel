@@ -69,7 +69,7 @@ function createEvent(req, res) {
  *
  * @apiParam {String} title Event title
  * @apiParam {String} description Event description
- * @apiParam {Date} datetime Event datetime
+ * @apiParam {Array} guests Event guests
  *
  * @apiSuccessExample Success-Response
  *    HTTP/1.1 200 OK
@@ -107,6 +107,9 @@ function updateEvent(req, res) {
     exec().
     then(function (event) {
 
+      if (event == null)
+        throw new Error("Not Found");
+
       if (event.admin.toString() !== req.current_user._id.toString())
         throw new Error("Forbidden");
 
@@ -119,16 +122,13 @@ function updateEvent(req, res) {
       if (typeof req.body.guests !== 'undefined' && req.body.guests.length > 0) {
 
         // remove guests not invited anymore
-        var i = event.guests.length;
-        while (i--) {
-          var oldGuest = event.guests[i];
+        event.guests.forEach(function (oldGuest, index) {
           var isInvited = req.body.guests.find(function (newGuest) {
             return newGuest.user.toString() === oldGuest.user.toString();
           });
-          if (!isInvited) {
-            event.guests[i].remove();
-          }
-        }
+          if (!isInvited)
+            oldGuest.remove();
+        });
 
         // invite new guests
         req.body.guests.forEach(function (newGuest) {
@@ -152,7 +152,7 @@ function updateEvent(req, res) {
     catch(function (error) {
       if (error.message === 'Forbidden')
         res.status(403).send({ message: "User does not have permission to update this event." });
-      else if (error.kind === 'ObjectId')
+      else if (error.message === 'Not Found')
         res.status(404).send({ message: "Event not found." });
       else
         res.status(400).send(error);
@@ -160,7 +160,7 @@ function updateEvent(req, res) {
 }
 
 /**
- * @api {post} /api/event/:event_id Get Event
+ * @api {get} /api/event/:event_id Get Event
  * @apiName get_event_by_id
  * @apiGroup Events
  * @apiVersion 0.1.0
@@ -234,6 +234,85 @@ function getEventById(req, res) {
 
 }
 
+
+
+/**
+ * @api {delete} /api/event/:event_id Delete Event
+ * @apiName delete_event_by_id
+ * @apiGroup Events
+ * @apiVersion 0.1.0
+ *
+ * @apiHeader {String} x-access-token Users unique access token
+ *
+ * @apiSuccessExample Success-Response
+ *    HTTP/1.1 200 OK
+ *    {
+ *      message:  "Event deleted!"
+ *    }
+ *
+ * @apiError ValidationError Validation error //TODO: change this error type
+ *
+ * @apiErrorExample Error-Response
+ *    HTTP/1.1 404 Not Found
+ *    {
+ *      event: null
+ *    }
+ *
+ *
+ * @apiError ValidationError Validation error //TODO: change this error type
+ *
+ * @apiErrorExample Error-Response
+ *    HTTP/1.1 400 Bad Request
+ *    {
+ *      errors: {
+ *        event: {
+ *          message: "Invalid Event Id."
+ *        }
+ *      }
+ *    }
+ */
+
+function removeEvent(req, res) {
+
+  var eventId = req.params.event_id;
+
+  Event.
+    findById(eventId).
+    select({
+      admin: 1
+    }).
+    populate({
+      path: 'guests'
+    }).
+    exec().
+    then(function (event) {
+
+      if (event == null)
+        throw new Error("Not Found");
+
+      if (event.admin.toString() !== req.current_user._id.toString())
+        throw new Error("Forbidden");
+
+      return event.remove();
+    }).
+    then(function (event) {
+      res.json({
+        message: "Event deleted!"
+        // TODO: add updated event information
+      });
+    }).
+    catch(function (error) {
+      if (error.message === 'Forbidden')
+        res.status(403).send({ message: "User does not have permission to delete this event." });
+      else if (error.message === 'Not Found')
+        res.status(404).send({ message: "Event not found." });
+      else
+        res.status(400).send(error);
+    });
+
+}
+
 exports.createEvent = createEvent;
 exports.getEventById = getEventById;
 exports.updateEvent = updateEvent;
+exports.removeEvent = removeEvent;

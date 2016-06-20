@@ -6,14 +6,14 @@ angular.module("controllers")
     vm.viewStatus = {
       datepickerOpened: false
     };
-/*
+
     // initialize eventData if empty
     if (typeof vm.eventData === 'undefined')
       vm.eventData = {
         datetime: new Date(),
         guests: []
       };
-*/
+
     // initialize potential event data
     vm.eventPotential = {
       datetime: new Date(),
@@ -85,7 +85,6 @@ angular.module("controllers")
 
     // initialize potential event data
     vm.eventPotential = {
-      datetime: new Date(),
       guests: []
     };
 
@@ -168,5 +167,19 @@ angular.module("controllers")
       }, function(response) {
 			  flash.setErrors(response.data);
 		  });
+
+    vm.cancelEvent = function (eventId) {
+      vm.processing = true;
+
+      Event.remove(eventId)
+        .then(function(response) {
+          vm.processing = false;
+					flash.setMessage(response.data.message);
+			    $location.path(config.main_path);
+        }, function(response) {
+          vm.processing = false;
+					flash.setErrors(response.data);
+				});
+    };
 
   }]);

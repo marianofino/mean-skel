@@ -2,8 +2,6 @@
   <h1>Edit Event</h1>
 </div>
 
-{{event.eventData}}
-
 <form ng-submit="createEventForm.$valid && event.saveEvent()" class="form-horizontal" name="createEventForm" novalidate>
 
   <div class="form-group">
@@ -26,7 +24,7 @@
     <label class="col-sm-2 control-label">Date</label>
     <div class="col-sm-2">
       <p class="input-group">
-        <input type="text" class="form-control" uib-datepicker-popup datepicker-options="{ minDate: event.eventPotential.datetime }" ng-model="event.eventData.datetime" is-open="event.viewStatus.datepickerOpened" close-text="Close" name="date"  ng-disabled="true" />
+        <input type="text" class="form-control" uib-datepicker-popup ng-model="event.eventData.datetime" is-open="event.viewStatus.datepickerOpened" close-text="Close" name="date"  ng-disabled="true" />
         <span class="input-group-btn">
           <button type="button" class="btn btn-default" ng-click="event.viewStatus.datepickerOpened = !event.viewStatus.datepickerOpened"><i class="glyphicon glyphicon-calendar"></i></button>
         </span>

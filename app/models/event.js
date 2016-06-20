@@ -68,18 +68,13 @@ EventSchema.pre('validate', function(next) {
   next();
 });
 
-/*
-// if guest status is attending, then guest status must be answered
-EventSchema.path('guests').validate(function (guests) {
-  var valid = guests.every(function (guest, index) {
-    if ((this.isNew || this.isModified('guests.' + index + '.status')) && guest.status.attending) {
-      return guest.status.answered;
-    }
-    return true;
-  }.bind(this));
-
-  return valid;
-}, 'Guest cannot attend if it didn\'t answer.');
-*/
+// patch for not calling remove middleware in subdocs (fixed in mongoose repo)
+EventSchema.pre('remove', function (next) {
+  if (typeof this.guests != 'undefined')
+    this.guests.forEach(function (guest) {
+        guest.remove();
+    });
+  next();
+});
 
 module.exports = mongoose.model("Event", EventSchema);

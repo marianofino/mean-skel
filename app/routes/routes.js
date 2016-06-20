@@ -44,6 +44,7 @@ function setup(app, handlers) {
 
   eventsRouter.get("/:event_id", handlers.events.getEventById);
   eventsRouter.put("/:event_id", handlers.events.updateEvent);
+  eventsRouter.delete("/:event_id", handlers.events.removeEvent);
 
   app.use("/api/events", eventsRouter);
 

@@ -10,6 +10,6 @@
     <h4 class="list-group-item-heading">{{eventItem.title}}</h4>
     <p class="list-group-item-text small">{{eventItem.date}}</p>
     <p class="list-group-item-text">{{eventItem.description}}</p>
-    <a class="btn btn-primary" ng-href="/editevent/{{eventItem._id}}">Edit</a> <a class="btn btn-danger" href="#">Cancel</a>
+    <a class="btn btn-primary" ng-href="/editevent/{{eventItem._id}}">Edit</a> <a class="btn btn-danger" ng-click="event.cancelEvent(eventItem._id)" href="#">Cancel</a>
   </div>
 </div>
