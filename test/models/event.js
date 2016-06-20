@@ -107,14 +107,20 @@ describe('Event', function () {
         expect(validUser.invitations).to.have.lengthOf(1);
         // remove guest
         validGuest.remove();
-        // updated user has it
-        User.
-          findById(validUser._id).
-          select({ invitations: 1 }).
-          exec().
-          then(function (user) {
-            expect(user.invitations).to.be.empty;
-            done();
+        // update doc
+        validEvent.save().
+          then(function (event) {
+            // TODO: the middleware is a post-remove hook, so this may fail.. debug why pre-remove is not working
+            // updated user does not have invitation anymore
+            User.
+              findById(validUser._id).
+              select({ invitations: 1 }).
+              exec().
+              then(function (user) {
+                expect(user.invitations).to.be.empty;
+                done();
+              }).
+              catch(done);
           }).
           catch(done);
       });

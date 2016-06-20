@@ -209,7 +209,7 @@ function updateCurrentUser(req, res) {
     user.password = req.body.new_password;
   }
 
-  if (req.body.firstname ){
+  if (req.body.firstname){
     user.firstname = req.body.firstname
   }
 

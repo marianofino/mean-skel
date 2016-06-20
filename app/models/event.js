@@ -49,18 +49,6 @@ EventSchema.pre('save', function (next) {
 
 });
 
-// fill guest sub-docs with event info
-EventSchema.pre('validate', function (next) {
-  var event = this;
-
-  // TODO: only if modified?
-  this.guests = this.guests.map(function (guest) {
-    guest.event = {_id: event._id, date: event.date};
-    return guest;
-  });
-
-  next();
-});
 
 // TODO: modularize this to a plugin
 // silently drop guest if there is another with same User ref
@@ -71,6 +59,7 @@ EventSchema.pre('validate', function(next) {
   });
 
   // remove duplicate ids
+  // TODO: remove calling remove() function
   this.guests = this.guests.filter(function (elem, index, self) {
     // TODO: check if subdoc is new
     return index == userRefs.indexOf(elem.user);

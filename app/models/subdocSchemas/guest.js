@@ -27,8 +27,8 @@ GuestSchema.pre("save", function(next) {
       }, {
         $addToSet: {
           invitations: {
-            date: guest.event.date,
-            event: guest.event._id
+            date: guest.parent().date,
+            event: guest.parent()._id
           }            
         }
       }).
@@ -42,27 +42,25 @@ GuestSchema.pre("save", function(next) {
 
 });
 
-GuestSchema.pre("remove", function(next) {
+// TODO: for some reason pre-hook is not working
+GuestSchema.post("remove", function(guest) {
 
-  var guest = this;
-
-  // removes invitaion subdoc in user
   User.
     findOneAndUpdate( {
       _id: guest.user
     }, {
       $pull: {
         invitations: {
-          event: guest.event._id
+          event: guest.parent()._id.toString()
         }            
       }
     }).
     exec().
-    then(function (user) {
-      next();
-    }).
-    // TODO: handle error in a better way.. Transactions would be nice
-    catch(next);
+    catch(function (error) {
+      // TODO: handle error in a better way.. Transactions would be nice
+      console.log(error);
+    });
+
 });
 
 module.exports = GuestSchema;

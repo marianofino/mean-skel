@@ -1,6 +1,8 @@
 <div class="page-header">
-  <h1>New Event</h1>
+  <h1>Edit Event</h1>
 </div>
+
+{{event.eventData}}
 
 <form ng-submit="createEventForm.$valid && event.saveEvent()" class="form-horizontal" name="createEventForm" novalidate>
 
@@ -15,7 +17,7 @@
   <div class="form-group">
     <label class="col-sm-2 control-label">Description</label>
     <div class="col-sm-6">
-      <textarea class="form-control" ng-model="event.eventData.description" name="description" required></textarea>
+      <textarea class="form-control" ng-model="event.eventData.description" name="description"  required></textarea>
       <div ng-show="createEventForm.$submitted" ng-messages="createEventForm.description.$error" ng-messages-include="/app/views/shared/formMessages.html"></div>
     </div>
   </div>
@@ -24,20 +26,18 @@
     <label class="col-sm-2 control-label">Date</label>
     <div class="col-sm-2">
       <p class="input-group">
-        <input type="text" class="form-control" uib-datepicker-popup datepicker-options="{ minDate: event.eventPotential.datetime }" ng-model="event.eventData.datetime" is-open="event.viewStatus.datepickerOpened" close-text="Close" name="date" required />
+        <input type="text" class="form-control" uib-datepicker-popup datepicker-options="{ minDate: event.eventPotential.datetime }" ng-model="event.eventData.datetime" is-open="event.viewStatus.datepickerOpened" close-text="Close" name="date"  ng-disabled="true" />
         <span class="input-group-btn">
           <button type="button" class="btn btn-default" ng-click="event.viewStatus.datepickerOpened = !event.viewStatus.datepickerOpened"><i class="glyphicon glyphicon-calendar"></i></button>
         </span>
       </p>
-      <div ng-show="createEventForm.$submitted" ng-messages="createEventForm.date.$error" ng-messages-include="/app/views/shared/formMessages.html"></div>
     </div>
   </div>
 
   <div class="form-group">
     <label class="col-sm-2 control-label">Time</label>
     <div class="col-sm-6">
-      <uib-timepicker ng-model="event.eventData.datetime" min="event.eventPotential.datetime" minute-step="1" name="time" required></uib-timepicker>
-      <div ng-show="createEventForm.$submitted" ng-messages="createEventForm.time.$error" ng-messages-include="/app/views/shared/formMessages.html"></div>
+      <uib-timepicker ng-model="event.eventData.datetime" ng-disabled="true" minute-step="1" name="time"></uib-timepicker>
     </div>
   </div>
 
@@ -59,7 +59,7 @@
   <div class="form-group">
     <div class="col-sm-offset-2 col-sm-6">
       <button type="submit" class="btn btn-block btn-primary" ng-disabled="event.processing">
-        <span ng-if="!event.processing">Create Event</span>
+        <span ng-if="!event.processing">Update Event</span>
         <span ng-if="event.processing" class="spinner"><span class="glyphicon glyphicon-repeat"></span></span>
       </button>
     </div>

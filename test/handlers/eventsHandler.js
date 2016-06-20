@@ -150,4 +150,336 @@ describe('EventsHandler', function () {
 
   });
 
+  describe('PUT /api/events/:event_id', function () {
+  	var validEvent = null;
+  	var access_token;
+    var oldTitle = 'Old title';
+    var totalGuests = 3;
+    var validGuests = null;
+
+	  before(function(done){
+      // create event
+    	var event = factory.create("event", {title: oldTitle, admin: validUser._id}, function(error, event) {
+        if (error) return done(error);
+
+        validEvent = event;
+
+        done();
+      });
+
+    });
+
+    // create guests
+    before(function (done) {
+      factory.createMany('guest', totalGuests, function (error, guests) {
+        if (error) return done(error);
+
+        validGuests = guests;
+
+        done();
+      });
+    });
+
+	  before(function(done){
+		  // Authenticate user
+		  request(server)
+    		.post('/api/users/authenticate')
+				.send({ email: validUser.email, password: password })
+        .end(function(error, response) {
+          if (error) return done(error);
+
+			    access_token = response.body.token;
+
+          done();
+        });
+    });
+
+  	it('responds with status 403 if token is not present', function (done) {
+    	request(server)
+    	  .put('/api/events/' + validEvent._id)
+    		.expect('Content-Type', /json/)
+				.expect(403)
+        .end(function(error, response) {
+          if (error) return done(error);
+
+          expect(response.body.message).to.equal("No token provided.");
+
+          done();
+        });
+    });
+
+    it('responds with status 403 if token is invalid', function (done) {
+    	request(server)
+    	  .put('/api/events/' + validEvent._id)
+    		.set('x-access-token', 'invalidtoken')
+    		.expect('Content-Type', /json/)
+				.expect(403)
+        .end(function(error, response) {
+          if (error) return done(error);
+
+          expect(response.body.message).to.equal("Failed to authenticate token.");
+
+          done();
+        });
+    });
+
+    it('responds with status 403 if user is not admin', function (done) {
+      factory.create('user', function (error, user) {
+        factory.create('event', {admin: user._id}, function (error, event) {
+          if (error) return done(error);
+
+        	request(server)
+        	  .put('/api/events/' + event._id)
+	          .set('x-access-token', access_token)
+        		.expect('Content-Type', /json/)
+				    .expect(403)
+            .end(function(error, response) {
+              if (error) return done(error);
+
+              expect(response.body.message).to.equal("User does not have permission to update this event.");
+
+              done();
+            });
+        });
+      });
+    });
+
+    it('responds with status 404 if event id is invalid', function (done) {
+    	request(server)
+    	  .put('/api/events/invalid')
+        .set('x-access-token', access_token)
+    		.expect('Content-Type', /json/)
+		    .expect(404)
+        .end(function(error, response) {
+          if (error) return done(error);
+
+          expect(response.body.message).to.equal("Event not found.");
+
+          done();
+        });
+    });
+
+    it('responds with error if some validation fails', function (done) {
+    	request(server)
+      	.put('/api/events/' + validEvent._id)
+    		.set('x-access-token', access_token)
+				.send({ description: null })
+				.expect('Content-Type', /json/)
+				.expect(400)
+        .end(function(error, response) {
+          if (error) return done(error);
+
+					expect(response.body.errors.description.message).to.equal('Description is required.');
+
+          done();
+        });
+    });
+
+  	it('responds with success if event title is updated', function (done) {
+      var newTitle = 'New title';
+
+      expect(validEvent.title).to.equal(oldTitle);
+
+    	request(server)
+    	  .put('/api/events/' + validEvent._id)
+        .send({ title: newTitle })
+	      .set('x-access-token', access_token)
+        .expect('Content-Type', /json/)
+        .expect(200)
+        .end(function(error, response) {
+          if (error) return done(error);
+
+          Event.
+            findById(validEvent._id).
+            select({
+              title: 1
+            }).
+            exec().
+            then(function (event) {
+              expect(event.title).to.equal(newTitle);
+              done();
+            }).
+            catch(done);
+
+        });
+    });
+
+  	it('responds with success if event guests are added', function (done) {
+    	request(server)
+    	  .put('/api/events/' + validEvent._id)
+        .send({ guests: validGuests })
+        .set('x-access-token', access_token)
+        .expect('Content-Type', /json/)
+        .expect(200)
+        .end(function(error, response) {
+          if (error) return done(error);
+
+          Event.
+            findById(validEvent._id).
+            select({
+              guests: 1
+            }).
+            exec().
+            then(function (event) {
+              expect(event.guests).to.have.lengthOf(totalGuests);
+              done();
+            }).
+            catch(done);
+
+        });
+    });
+
+  	it('responds with success if an event guest is removed', function (done) {
+      // remove first event guest
+      var removedGuest = validGuests.splice(0, 1)[0];
+
+    	request(server)
+    	  .put('/api/events/' + validEvent._id)
+        .send({ guests: validGuests })
+        .set('x-access-token', access_token)
+        .expect('Content-Type', /json/)
+        .expect(200)
+        .end(function(error, response) {
+          if (error) return done(error);
+
+          Event.
+            findById(validEvent._id).
+            select({
+              guests: 1
+            }).
+            populate({
+              path: 'guests'
+            }).
+            exec().
+            then(function (event) {
+              expect(event.guests).to.have.lengthOf(totalGuests - 1);
+              event.guests.forEach(function (guest) {
+                expect(guest.user).not.to.equal(removedGuest.user.toString());
+              });
+              done();
+            }).
+            catch(done);
+
+        });
+
+    });
+
+  });
+
+  describe('GET /api/events/:event_id', function () {
+  	var validEvent = null;
+  	var access_token;
+
+	  before(function(done){
+      // create event
+    	var event = factory.create("event", function(error, event) {
+        if (error) return done(error);
+
+        validEvent = event;
+
+        done();
+      });
+
+    });
+
+	  before(function(done){
+		  // Authenticate user
+		  request(server)
+    		.post('/api/users/authenticate')
+				.send({ email: validUser.email, password: password })
+        .end(function(error, response) {
+          if (error) return done(error);
+
+			    access_token = response.body.token;
+
+          done();
+        });
+    });
+
+  	it('responds with status 403 if token is not present', function (done) {
+    	request(server)
+    	  .get('/api/events/' + validEvent._id)
+    		.expect('Content-Type', /json/)
+				.expect(403)
+        .end(function(error, response) {
+          if (error) return done(error);
+
+          expect(response.body.message).to.equal("No token provided.");
+
+          done();
+        });
+    });
+
+    it('responds with status 403 if token is invalid', function (done) {
+    	request(server)
+    	  .get('/api/events/' + validEvent._id)
+    		.set('x-access-token', 'invalidtoken')
+    		.expect('Content-Type', /json/)
+				.expect(403)
+        .end(function(error, response) {
+          if (error) return done(error);
+
+          expect(response.body.message).to.equal("Failed to authenticate token.");
+
+          done();
+        });
+    });
+
+  	it('responds with success if event is retrieved', function (done) {
+    	request(server)
+    	  .get('/api/events/' + validEvent._id)
+	      .set('x-access-token', access_token)
+        .expect('Content-Type', /json/)
+        .expect(200)
+        .end(function(error, response) {
+          if (error) return done(error);
+
+          expect(response.body.event._id).to.equal(validEvent._id.toString());
+
+          done();
+        });
+    });
+
+  	it('responds with status 404 if event doesn\'t exist', function (done) {
+      factory.build('event', function (error, event) {
+        if (error) return done(error);
+
+      	request(server)
+      	  .get('/api/events/' + event._id)
+	        .set('x-access-token', access_token)
+          .expect('Content-Type', /json/)
+          .expect(404)
+          .end(function(error, response) {
+            if (error) return done(error);
+
+            expect(response.body.event).to.be.null;
+
+            done();
+          });
+
+      });
+    });
+
+  	it('responds with status 400 if invalid event id is passed', function (done) {
+      factory.build('event', function (error, event) {
+        if (error) return done(error);
+
+      	request(server)
+      	  .get('/api/events/notValid')
+	        .set('x-access-token', access_token)
+          .expect('Content-Type', /json/)
+          .expect(400)
+          .end(function(error, response) {
+            if (error) return done(error);
+
+            expect(response.body.errors.event.message).to.equal("Invalid Event Id.");
+
+            done();
+          });
+
+      });
+    });
+
+  });
+
 });

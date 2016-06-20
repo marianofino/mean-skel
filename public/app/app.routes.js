@@ -62,9 +62,9 @@ angular.module("app.routes", ["ngRoute"])
           }
       })
 
-      .when("/newevent", {
-        templateUrl: "app/views/events/new.html",
-        controller: "eventCreateController",
+      .when("/editevent/:event_id", {
+        templateUrl: "app/views/events/edit.html",
+        controller: "eventEditController",
         controllerAs: "event",
         resolve: {
             auth: isAuthenticated

@@ -42,6 +42,9 @@ function setup(app, handlers) {
   eventsRouter.use(token_authentication);
   eventsRouter.post("/", handlers.events.createEvent);
 
+  eventsRouter.get("/:event_id", handlers.events.getEventById);
+  eventsRouter.put("/:event_id", handlers.events.updateEvent);
+
   app.use("/api/events", eventsRouter);
 
 };
