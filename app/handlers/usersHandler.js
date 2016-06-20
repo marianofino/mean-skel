@@ -286,6 +286,7 @@ function getList(req, res) {
  *      ]
  *    }
  */
+
 function getEventAdminList(req, res) {
   var events;
 

@@ -155,10 +155,59 @@ angular.module("controllers")
   .controller("eventListAdminController", ['Event', '$location', 'flash', 'config', function(Event, $location, flash, config) {
     var vm = this;
 
+    vm.viewStatus = {
+      admin: true,
+      title: 'My Events'
+    };
+
     vm.eventList = [];
 
     // populate events
     Event.getAdminList()
+      .then(function(response) {
+        vm.eventList = response.data.events.map(function (event) {
+          event.date = (new Date(event.date)).toLocaleString();
+          return { event: event };
+        });
+      }, function(response) {
+			  flash.setErrors(response.data);
+		  });
+
+    vm.cancelEvent = function (eventId) {
+      vm.processing = true;
+
+      Event.remove(eventId)
+        .then(function(response) {
+          vm.processing = false;
+					flash.setMessage(response.data.message);
+			    $location.path(config.main_path);
+        }, function(response) {
+          vm.processing = false;
+					flash.setErrors(response.data);
+				});
+    };
+
+  }])
+
+  .controller("eventListController", ['Event', '$location', 'flash', 'config', function(Event, $location, flash, config) {
+    var vm = this;
+
+    vm.viewStatus = {
+      title: 'Agenda'
+    };
+
+    vm.eventList = [];
+
+    vm.isPending = function (invitation) {
+      return !invitation.status.answered;
+    };
+
+    vm.isFuture = function (invitation) {
+      return invitation.status.answered && invitation.status.attending;
+    };
+
+    // populate invitations
+    Event.getList()
       .then(function(response) {
         vm.eventList = response.data.events.map(function (event) {
           event.date = (new Date(event.date)).toLocaleString();

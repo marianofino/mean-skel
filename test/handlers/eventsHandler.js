@@ -620,4 +620,123 @@ describe('EventsHandler', function () {
 
   });
 
+
+
+  describe('GET /api/events', function () {
+  	var access_token;
+    var validEvent = null;
+
+	  before(function(done){
+      // create event
+    	var event = factory.create("event", {admin: validUser._id}, function(error, event) {
+        if (error) return done(error);
+
+        validEvent = event;
+
+        done();
+      });
+
+    });
+
+	  before(function(done){
+		  // Authenticate user
+		  request(server)
+    		.post('/api/users/authenticate')
+				.send({ email: validUser.email, password: password })
+        .end(function(error, response) {
+          if (error) return done(error);
+
+			    access_token = response.body.token;
+
+          done();
+        });
+    });
+
+  	it('responds with status 403 if token is not present', function (done) {
+    	request(server)
+    	  .get('/api/events')
+    		.expect('Content-Type', /json/)
+				.expect(403)
+        .end(function(error, response) {
+          if (error) return done(error);
+
+          expect(response.body.message).to.equal("No token provided.");
+
+          done();
+        });
+    });
+
+    it('responds with status 403 if token is invalid', function (done) {
+    	request(server)
+    	  .get('/api/events')
+    		.set('x-access-token', 'invalidtoken')
+    		.expect('Content-Type', /json/)
+				.expect(403)
+        .end(function(error, response) {
+          if (error) return done(error);
+
+          expect(response.body.message).to.equal("Failed to authenticate token.");
+
+          done();
+        });
+    });
+
+    it('responds with success and retrieves empty list if no invitations', function (done) {
+    	request(server)
+    		.get('/api/events')
+    		.set('x-access-token', access_token)
+				.expect('Content-Type', /json/)
+				.expect(200)
+        .end(function(error, response) {
+          if (error) return done(error);
+
+					expect(response.body.events).to.be.instanceof(Array);
+					expect(response.body.events).to.be.empty;
+
+          done();
+        });
+    });
+
+    it('responds with success and retrieves event if user has one invitation', function (done) {
+      factory.create('event', function (error, event) {
+        if (error) done(error);
+
+        // add user as guest
+        event.guests.addToSet({ user: validUser._id });
+
+        event.save().
+          then(function (event) {
+          	request(server)
+          		.get('/api/events')
+          		.set('x-access-token', access_token)
+				      .expect('Content-Type', /json/)
+				      .expect(200)
+              .end(function(error, response) {
+                if (error) return done(error);
+
+					      expect(response.body.events).to.be.instanceof(Array);
+					      expect(response.body.events).to.be.lengthOf(1);
+					      expect(response.body.events[0].event._id).to.equal(event._id.toString());
+
+                done();
+              });
+          }).
+          catch(done);
+      });
+    });
+
+/*
+    it('does not include events to which the user hasn\'t been invited', function (done) {
+    	request(server)
+    		.get('/api/guests')
+    		.set('x-access-token', access_token)
+				.expect('Content-Type', /json/)
+				.expect(function(response){
+					expect(response.body.guests).to.be.instanceof(Array);
+				})
+				.expect(200, done);
+    });
+*/
+  });
+
 });

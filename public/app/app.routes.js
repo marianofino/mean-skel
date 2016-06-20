@@ -45,9 +45,9 @@ angular.module("app.routes", ["ngRoute"])
       })
 
       .when("/agenda", {
-        templateUrl: "app/views/mockup/agenda.html",
-        controller: "userEditController",
-        controllerAs: "user",
+        templateUrl: "app/views/events/list.html",
+        controller: "eventListController",
+        controllerAs: "event",
         resolve: {
             auth: isAuthenticated
           }

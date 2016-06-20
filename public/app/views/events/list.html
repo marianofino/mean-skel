@@ -1,15 +1,41 @@
 <div class="page-header">
-	<h1>My Events</h1>
+	<h1>{{event.viewStatus.title}}</h1>
 </div>
 
-<br />
-<br />
+<uib-tabset active="activePill" type="pills">
+  <uib-tab index="0" heading="Future events">
 
-<div class="list-group">
-  <div class="list-group-item" ng-repeat="eventItem in event.eventList">
-    <h4 class="list-group-item-heading">{{eventItem.title}}</h4>
-    <p class="list-group-item-text small">{{eventItem.date}}</p>
-    <p class="list-group-item-text">{{eventItem.description}}</p>
-    <a class="btn btn-primary" ng-href="/editevent/{{eventItem._id}}">Edit</a> <a class="btn btn-danger" ng-click="event.cancelEvent(eventItem._id)" href="#">Cancel</a>
-  </div>
-</div>
+    <div class="list-group">
+      <div class="list-group-item" ng-repeat="item in event.eventList | filter:event.isFuture">
+        <h4 class="list-group-item-heading">{{item.event.title}}</h4>
+        <p class="list-group-item-text small">{{item.event.date}}</p>
+        <p class="list-group-item-text">{{item.event.description}}</p>
+
+        <div ng-if="event.viewStatus.admin">
+          <a class="btn btn-primary" ng-href="/editevent/{{item.event._id}}">Edit</a> <a class="btn btn-danger" ng-click="event.cancelEvent(item.event._id)" href="#">Cancel</a>
+        </div>
+
+      </div>
+    </div>
+
+  </uib-tab>
+  <uib-tab ng-if="!event.viewStatus.admin" index="1" heading="Pending invitations">
+
+    <div class="list-group">
+      <div class="list-group-item" ng-repeat="item in event.eventList | filter:event.isPending">
+        <h4 class="list-group-item-heading">{{item.event.title}}</h4>
+        <p class="list-group-item-text small">{{item.event.date}}</p>
+        <p class="list-group-item-text">{{item.event.description}}</p>
+
+        <div ng-if="event.viewStatus.admin">
+          <a class="btn btn-primary" ng-href="/editevent/{{item.event._id}}">Edit</a> <a class="btn btn-danger" ng-click="event.cancelEvent(item.event._id)" href="#">Cancel</a>
+        </div>
+
+        <div>
+          <a class="btn btn-success" href="#">Accept</a> <a class="btn btn-danger" href="#">Decline</a>
+        </div>
+      </div>
+    </div>
+
+  </uib-tab>
+</uib-tabset>

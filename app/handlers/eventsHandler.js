@@ -1,4 +1,5 @@
 const config = require("../../config").config(),
+      User = require("../models/user"),
       Event = require("../models/event");
 
 /**
@@ -119,7 +120,7 @@ function updateEvent(req, res) {
       if (typeof req.body.description !== 'undefined')
         event.description = req.body.description;
 
-      if (typeof req.body.guests !== 'undefined' && req.body.guests.length > 0) {
+      if (typeof req.body.guests !== 'undefined') {
 
         // remove guests not invited anymore
         event.guests.forEach(function (oldGuest, index) {
@@ -312,7 +313,59 @@ function removeEvent(req, res) {
 
 }
 
+
+
+/**
+ * @api {get} /api/events List users
+ * @apiName get_event_guest_list
+ * @apiGroup Users
+ * @apiVersion 0.1.0
+ *
+ * @apiHeader {String} x-access-token Users unique access token
+ *
+ * @apiSuccessExample Success-Response
+ *    HTTP/1.1 200 OK
+ *    {
+ *      events: [
+ *        {
+ *          _id: "5766c207de961b2436fd9605",
+ *          title: "Birthday",
+ *          description: "At my house :)",
+ *          date: "2017-05-01T08:15:44.926Z"
+ *        }
+ *        ...
+ *      ]
+ *    }
+ */
+
+function getEventGuestList(req, res) {
+  var events;
+
+  User.
+    findById(req.current_user._id).
+    populate({
+      path: 'invitations.event',
+      select: {
+        _id: 1,
+        title: 1,
+        description: 1,
+        date: 1
+      }
+    }).
+    exec().
+    then(function (user) {
+      res.json({ events: user.invitations })
+    }).
+    catch(function (error) {
+      // something bad happened if error
+      console.log(error);
+      res.status(500).send(error);
+    });
+
+}
+
 exports.createEvent = createEvent;
 exports.getEventById = getEventById;
 exports.updateEvent = updateEvent;
 exports.removeEvent = removeEvent;
+exports.getEventGuestList = getEventGuestList;

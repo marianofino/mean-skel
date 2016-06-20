@@ -12,9 +12,14 @@ angular.module("services")
 			return $http.put(config.api_url + "/events/" + eventData._id, eventData);
 		};
 
-		// create an event
+		// get an event
 		eventFactory.getById = function(eventId) {
 			return $http.get(config.api_url + "/events/" + eventId);
+		};
+
+		// get list of events
+		eventFactory.getList = function() {
+			return $http.get(config.api_url + "/events");
 		};
 
 		// get events for this admin
