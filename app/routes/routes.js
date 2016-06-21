@@ -43,7 +43,7 @@ function setup(app, handlers) {
   eventsRouter.use(token_authentication);
 
   eventsRouter.post("/", handlers.events.createEvent);
-  eventsRouter.get("/", handlers.events.getEventGuestList);
+  eventsRouter.get("/", handlers.events.getEventsOfGuestList);
 
   eventsRouter.get("/:event_id", handlers.events.getEventById);
   eventsRouter.put("/:event_id", handlers.events.updateEvent);

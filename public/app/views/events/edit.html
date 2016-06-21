@@ -51,7 +51,7 @@
   </div>
 
   <ul>
-    <li ng-repeat="guest in event.eventData.guests">{{event.getGuestName(guest.user)}} <a href="#" ng-click="event.removeGuest(guest.user)">Remove</a></li>
+    <li ng-repeat="guest in event.eventData.guests">{{event.getGuestName(guest.user)}} ({{event.getGuestStatus(guest.status)}}) <a href="#" ng-click="event.removeGuest(guest.user)">Remove</a></li>
   </ul>
 
   <div class="form-group">

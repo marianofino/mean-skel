@@ -1,6 +1,7 @@
 var request = require('supertest'),
     factory = require('factory-girl'),
     Event = require('../../app/models/event'),
+    User = require('../../app/models/user'),
     server = require('../../server'),
     expect = require('chai').expect;
 
@@ -716,10 +717,40 @@ describe('EventsHandler', function () {
 
 					      expect(response.body.events).to.be.instanceof(Array);
 					      expect(response.body.events).to.be.lengthOf(1);
-					      expect(response.body.events[0].event._id).to.equal(event._id.toString());
+                // check response format
+					      expect(response.body.events[0]._id).to.equal(event._id.toString());
+					      expect(response.body.events[0].title).to.equal(event.title);
+					      expect(response.body.events[0].description).to.equal(event.description);
+					      expect(response.body.events[0].admin_name).to.equal(event.admin_name);
+					      expect(response.body.events[0].date).to.equal(event.date.toISOString());
+					      expect(response.body.events[0].status.attending).to.be.false;
+					      expect(response.body.events[0].status.answered).to.be.false;
 
                 done();
               });
+          }).
+          catch(done);
+      });
+    });
+
+    it('responds with success and doesn\'t retrieve past events', function (done) {
+      // supose server is running on the same environment than the tests
+      factory.create('event', {date: Date.now()}, function (error, event) {
+
+        // add user as guest
+        event.guests.addToSet({ user: validUser._id });
+
+        event.save().
+          then(function (event) {
+          	request(server)
+              .get('/api/events')
+              .set('x-access-token', access_token)
+      				.expect('Content-Type', /json/)
+      				.expect(function(response) {
+      					expect(response.body.events).to.be.lengthOf(1);
+					      expect(response.body.events[0]._id).not.to.be.equal(event._id.toString());
+      				})
+  				    .expect(200, done);
           }).
           catch(done);
       });

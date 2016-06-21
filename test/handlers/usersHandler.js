@@ -328,8 +328,103 @@ describe('UsersHandler', function () {
   				.end(function(err, res){
   					nock.cleanAll();
 					done();
-				});;
+				});
 	    });
+
+    	it('attends event and responds with success', function (done) {
+        factory.create('event', function (error, event) {
+          if (error) return done(error);
+
+          // invite user
+          event.guests.addToSet({ user: validUser._id });
+
+          event.save().
+            then(function (event) {
+
+            	request(server)
+            	  .put('/api/user')
+                .send({ action: 'attend', event: event._id })
+                .set('x-access-token', access_token)
+                .expect('Content-Type', /json/)
+                .expect(200)
+                .end(function(error, response) {
+                  if (error) return done(error);
+
+                  User.
+                    findById(validUser._id).
+                    populate({
+                      path: 'invitations.event'
+                    }).
+                    select({
+                      invitations: 1
+                    }).
+                    exec().
+                    then(function (user) {
+                      // check status in user collection
+                      expect(user.invitations[0].status.answered).to.be.true;
+                      expect(user.invitations[0].status.attending).to.be.true;
+                      // check status in event collection
+                      expect(user.invitations[0].event.guests[0].status.answered).to.be.true;
+                      expect(user.invitations[0].event.guests[0].status.attending).to.be.true;
+                      done();
+                    }).
+                    catch(done);
+
+                });
+
+            }).
+            catch(done);
+
+        });
+      });
+
+    	it('declines event and responds with success', function (done) {
+        factory.create('event', function (error, event) {
+          if (error) return done(error);
+
+          // invite user
+          event.guests.addToSet({ user: validUser._id });
+
+          event.save().
+            then(function (event) {
+
+            	request(server)
+            	  .put('/api/user')
+                .send({ action: 'decline', event: event._id })
+                .set('x-access-token', access_token)
+                .expect('Content-Type', /json/)
+                .expect(200)
+                .end(function(error, response) {
+                  if (error) return done(error);
+
+                  User.
+                    findById(validUser._id).
+                    populate({
+                      path: 'invitations.event'
+                    }).
+                    select({
+                      invitations: 1
+                    }).
+                    exec().
+                    then(function (user) {
+                      // check status in user collection
+                      expect(user.invitations[1].status.answered).to.be.true;
+                      expect(user.invitations[1].status.attending).to.be.false;
+                      // check status in event collection
+                      expect(user.invitations[1].event.guests[0].status.answered).to.be.true;
+                      expect(user.invitations[1].event.guests[0].status.attending).to.be.false;
+                      done();
+                    }).
+                    catch(done);
+
+                });
+
+            }).
+            catch(done);
+
+        });
+      });
+
     });
 
 	describe('GET /api/user/events', function () {
@@ -374,16 +469,34 @@ describe('UsersHandler', function () {
 				}, done);
 	    });
 
-	    it('responds with success if events list is retrieved', function (done) {
+	    it('responds with success if future events list is retrieved', function (done) {
 	    	request(server)
 	    		.get('/api/user/events')
 	    		.set('x-access-token', access_token)
   				.expect('Content-Type', /json/)
   				.expect(function(response) {
   					expect(response.body.events).to.be.lengthOf(1);
-  					expect(response.body.events[0]._id).to.be.equal(validEvent._id.toString());
+  					expect(response.body.events[0]._id).to.equal(validEvent._id.toString());
+			      expect(response.body.events[0].title).to.equal(validEvent.title);
+			      expect(response.body.events[0].description).to.equal(validEvent.description);
+			      expect(response.body.events[0].date).to.equal(validEvent.date.toISOString());
   				})
   				.expect(200, done);
+	    });
+
+	    it('responds with success and doesn\'t retrieve past events', function (done) {
+        // supose server is running on the same environment than the tests
+        factory.create('event', {admin: validUser._id, date: Date.now()}, function (error, event) {
+	      	request(server)
+	      		.get('/api/user/events')
+	      		.set('x-access-token', access_token)
+    				.expect('Content-Type', /json/)
+    				.expect(function(response) {
+    					expect(response.body.events).to.be.lengthOf(1);
+  					expect(response.body.events[0]._id).not.to.be.equal(event._id.toString());
+    				})
+    				.expect(200, done);
+	      });
 	    });
 
     });

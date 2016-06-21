@@ -8,6 +8,7 @@ var EventSchema = new Schema({
   date: { type: Date, required: "Date and time are required.", index: true },
   title: { type: String, trim: true, required: "Title is required." },
   description: { type: String, trim: true, required: "Description is required." },
+  admin_name: { type: String, trim: true, default: "Uknown" },
   admin: { type: Schema.Types.ObjectId, ref: "User", required: "Admin user is required.", select: false },
   guests: [GuestSchema],
   created_at: { type: Date, default: Date.now }
@@ -46,7 +47,6 @@ EventSchema.pre('save', function (next) {
       // TODO: handle error in a better way.. Transactions would be nice
       catch(next);
   }
-
 });
 
 

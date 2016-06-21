@@ -21,7 +21,8 @@ var register = function() {
   // TODO: change mongoose promise
 	// Event factory
 	factory.define('event', Event, {
-		date: faker.date.future(),
+    // date should be very long in the future for better reliability in the tests
+		date: faker.date.future(1),
 		title: faker.lorem.sentence(),
 		description: faker.lorem.paragraph(),
     admin: factory.assoc('user', '_id'),
@@ -38,7 +39,7 @@ var register = function() {
   factory.setAdapter(new factory.ObjectAdapter(), 'invitation');
 	factory.define('invitation', {}, {
     event: factory.assoc('event', '_id'),
-    date: faker.date.future()
+    date: faker.date.future(1)
 	});
 
 }

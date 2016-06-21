@@ -13,21 +13,28 @@ var InvitationSchema = new Schema({
 InvitationSchema.pre('save', function (next) {
   var error = null;
 
-  if (this.status.answered) {
+  if (this.isModified('status.answered') && !this.status.answered)
     var error = new Error('User has already answered this invitation.');
-  } else if (!this.isNew) {
-    this.status.answered = true;
-  }
 
-  return next(error);
+  next(error);
 });
 
 InvitationSchema.methods.attend = function() {
-  this.status.attending = true;
+  if (!this.status.answered) {
+    this.status.attending = true;
+    this.status.answered = true;
+  } else
+    // send warn that answered is trying to be changed
+    this.status.answered = false;
 };
 
 InvitationSchema.methods.decline = function() {
-  this.status.attending = false;
+  if (!this.status.answered) {
+    this.status.attending = false;
+    this.status.answered = true;
+  } else
+    // send warn that answered is trying to be changed
+    this.status.answered = false;
 };
 
 module.exports = InvitationSchema;

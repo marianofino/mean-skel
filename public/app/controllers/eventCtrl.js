@@ -10,7 +10,6 @@ angular.module("controllers")
     // initialize eventData if empty
     if (typeof vm.eventData === 'undefined')
       vm.eventData = {
-        datetime: new Date(),
         guests: []
       };
 
@@ -118,6 +117,14 @@ angular.module("controllers")
       return null;
     }
 
+    // show guest status
+    vm.getGuestStatus = function (status) {
+      var statusLabel = 'not answered';
+      if (status.answered)
+        statusLabel = status.attending ? 'attending' : 'declined';
+      return statusLabel;
+    }
+
     // add guest to invitation list
     vm.addGuest = function (guestId) {
       // check if not present already
@@ -167,7 +174,7 @@ angular.module("controllers")
       .then(function(response) {
         vm.eventList = response.data.events.map(function (event) {
           event.date = (new Date(event.date)).toLocaleString();
-          return { event: event };
+          return event;
         });
       }, function(response) {
 			  flash.setErrors(response.data);
@@ -189,7 +196,7 @@ angular.module("controllers")
 
   }])
 
-  .controller("eventListController", ['Event', '$location', 'flash', 'config', function(Event, $location, flash, config) {
+  .controller("eventListController", ['Event', 'User', '$location', 'flash', 'config', function(Event, User, $location, flash, config) {
     var vm = this;
 
     vm.viewStatus = {
@@ -216,6 +223,34 @@ angular.module("controllers")
       }, function(response) {
 			  flash.setErrors(response.data);
 		  });
+
+    vm.attend = function (eventId) {
+      vm.processing = true;
+
+      User.attend(eventId)
+        .then(function(response) {
+          vm.processing = false;
+					flash.setMessage(response.data.message);
+			    $location.path(config.main_path);
+        }, function(response) {
+          vm.processing = false;
+					flash.setErrors(response.data);
+				});
+    };
+
+    vm.decline = function (eventId) {
+      vm.processing = true;
+
+      User.decline(eventId)
+        .then(function(response) {
+          vm.processing = false;
+					flash.setMessage(response.data.message);
+			    $location.path(config.main_path);
+        }, function(response) {
+          vm.processing = false;
+					flash.setErrors(response.data);
+				});
+    };
 
     vm.cancelEvent = function (eventId) {
       vm.processing = true;

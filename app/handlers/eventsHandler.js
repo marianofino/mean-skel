@@ -38,6 +38,7 @@ function createEvent(req, res) {
   event.title = req.body.title;
   event.description = req.body.description;
   event.date = req.body.datetime;
+  event.admin_name = req.current_user.firstname + ' ' + req.current_user.lastname;
 
   // add guests
   if (typeof req.body.guests !== 'undefined')
@@ -180,7 +181,16 @@ function updateEvent(req, res) {
  *        _id: "5766c207de961b2436fd9605",
  *        title: "Birthday",
  *        description: "At my house :)",
- *        date: "2017-05-01T08:15:44.926Z"
+ *        date: "2017-05-01T08:15:44.926Z",
+ *        guests: [
+            {
+              status: {
+                answered: true,
+                attending: false
+              },
+              user: "5766c207de9d1b24369896fg"
+            }
+          ]
  *      }
  *    }
  *
@@ -280,10 +290,9 @@ function removeEvent(req, res) {
   Event.
     findById(eventId).
     select({
-      admin: 1
-    }).
-    populate({
-      path: 'guests'
+      admin: 1,
+      // select guests for pre-remove hooks
+      guests: 1
     }).
     exec().
     then(function (event) {
@@ -331,34 +340,80 @@ function removeEvent(req, res) {
  *          _id: "5766c207de961b2436fd9605",
  *          title: "Birthday",
  *          description: "At my house :)",
- *          date: "2017-05-01T08:15:44.926Z"
+ *          date: "2017-05-01T08:15:44.926Z",
+ *          admin: "Mike Johnson",
+ *          status: {
+ *            attending: true,
+ *            answered: true
+ *          }
  *        }
  *        ...
  *      ]
  *    }
  */
 
-function getEventGuestList(req, res) {
+function getEventsOfGuestList(req, res) {
   var events;
 
   User.
-    findById(req.current_user._id).
+    findOne({
+      _id: req.current_user._id
+      // TODO: it would be nice to filter here events by date
+    }).
     populate({
       path: 'invitations.event',
       select: {
         _id: 1,
         title: 1,
         description: 1,
+        date: 1,
+        admin: 1,
+        admin_name: 1
+      },
+      sort: {
+        // TODO: this sorting is not working
         date: 1
+      },
+      match: {
+        date: { $gte: Date.now() }
       }
     }).
     exec().
     then(function (user) {
-      res.json({ events: user.invitations })
+      var parsedInvitations = [];
+
+      user.invitations.forEach(function (invitation) {
+        if (invitation.event) {
+          var responseItem = {
+            _id: invitation.event._id,
+            description: invitation.event.description,
+            title: invitation.event.title,
+            admin_name: invitation.event.admin_name,
+            date: invitation.event.date,
+            status: {
+              answered: invitation.status.answered,
+              attending: invitation.status.attending
+            }
+          };
+          parsedInvitations.push(responseItem);
+        }
+      });
+
+      // TODO: it should be better to retrieve it directly from mongodb
+      parsedInvitations.sort(function (a, b) {
+        if (a.date > b.date)
+          return 1;
+
+        if (a.date < b.date)
+          return -1;
+
+        return 0;
+      });
+
+      res.json({ events: parsedInvitations })
     }).
     catch(function (error) {
       // something bad happened if error
-      console.log(error);
       res.status(500).send(error);
     });
 
@@ -368,4 +423,4 @@ exports.createEvent = createEvent;
 exports.getEventById = getEventById;
 exports.updateEvent = updateEvent;
 exports.removeEvent = removeEvent;
-exports.getEventGuestList = getEventGuestList;
+exports.getEventsOfGuestList = getEventsOfGuestList;

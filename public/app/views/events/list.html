@@ -7,12 +7,12 @@
 
     <div class="list-group">
       <div class="list-group-item" ng-repeat="item in event.eventList | filter:event.isFuture">
-        <h4 class="list-group-item-heading">{{item.event.title}}</h4>
-        <p class="list-group-item-text small">{{item.event.date}}</p>
-        <p class="list-group-item-text">{{item.event.description}}</p>
+        <h4 class="list-group-item-heading">{{item.title}}</h4>
+        <p class="list-group-item-text small">{{item.date}} <strong ng-if="!event.viewStatus.admin">/ {{item.admin_name}}</strong></p>
+        <p class="list-group-item-text">{{item.description}}</p>
 
         <div ng-if="event.viewStatus.admin">
-          <a class="btn btn-primary" ng-href="/editevent/{{item.event._id}}">Edit</a> <a class="btn btn-danger" ng-click="event.cancelEvent(item.event._id)" href="#">Cancel</a>
+          <a class="btn btn-primary" ng-href="/editevent/{{item._id}}">Edit</a> <a class="btn btn-danger" ng-click="event.cancelEvent(item._id)" href="#">Cancel</a>
         </div>
 
       </div>
@@ -23,16 +23,16 @@
 
     <div class="list-group">
       <div class="list-group-item" ng-repeat="item in event.eventList | filter:event.isPending">
-        <h4 class="list-group-item-heading">{{item.event.title}}</h4>
-        <p class="list-group-item-text small">{{item.event.date}}</p>
-        <p class="list-group-item-text">{{item.event.description}}</p>
+        <h4 class="list-group-item-heading">{{item.title}}</h4>
+        <p class="list-group-item-text small">{{item.date}} <strong ng-if="!event.viewStatus.admin">/ {{item.admin_name}}</strong></p>
+        <p class="list-group-item-text">{{item.description}}</p>
 
         <div ng-if="event.viewStatus.admin">
-          <a class="btn btn-primary" ng-href="/editevent/{{item.event._id}}">Edit</a> <a class="btn btn-danger" ng-click="event.cancelEvent(item.event._id)" href="#">Cancel</a>
+          <a class="btn btn-primary" ng-href="/editevent/{{item._id}}">Edit</a> <a class="btn btn-danger" ng-click="event.cancelEvent(item._id)" href="#">Cancel</a>
         </div>
 
         <div>
-          <a class="btn btn-success" href="#">Accept</a> <a class="btn btn-danger" href="#">Decline</a>
+          <a class="btn btn-success" href="#" ng-click="event.attend(item._id)">Accept</a> <a class="btn btn-danger" href="#" ng-click="event.decline(item._id)">Decline</a>
         </div>
       </div>
     </div>

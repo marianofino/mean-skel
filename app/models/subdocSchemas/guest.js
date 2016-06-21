@@ -1,5 +1,6 @@
 const mongoose = require("mongoose"),
       User = require('../user'),
+      mailer = require("../../helpers/mailer"),
       Schema = mongoose.Schema;
 
 var GuestSchema = new Schema({
@@ -27,7 +28,7 @@ GuestSchema.pre("save", function(next) {
       }, {
         $addToSet: {
           invitations: {
-            date: guest.parent().date,
+            date: new Date(guest.parent().date),
             event: guest.parent()._id
           }            
         }
@@ -42,7 +43,81 @@ GuestSchema.pre("save", function(next) {
 
 });
 
-// TODO: for some reason pre-hook is not working
+
+GuestSchema.pre("save", function(next) {
+  this.wasNew = this.isNew;
+
+  // set flag to send email when status changed
+  if (!this.isNew && this.isModified('status.answered'))
+    this.sendAdminEmail = true;
+  else
+    this.sendAdminEmail = false;
+    
+  next();
+});
+
+// send new invitation email
+GuestSchema.post("save", function(guest) {
+
+  if (this.wasNew && process.env.NODE_ENV !== 'test') {
+
+    // TODO: debug why this hook is being called twice
+    this.wasNew = false;
+
+    User.
+      findById(guest.user).
+      exec().
+      then(function (user) {
+        mailer.sendInvitationEmail(user, function(error){
+          // TODO: Handle error if exists
+        });
+      }).
+      catch(function (error) {
+        // TODO: handle error in a better way.. Transactions would be nice
+        //console.log(error);
+      });
+
+  }
+
+});
+
+// send event cancelation email
+GuestSchema.post("remove", function(guest) {
+
+  if (process.env.NODE_ENV !== 'test') {
+
+    console.log('entro aca');
+
+    User.
+      findById(guest.user).
+      exec().
+      then(function (user) {
+        console.log(user);
+        mailer.sendCancelationEmail(user, function(error){
+          // TODO: Handle error if exists
+        });
+      }).
+      catch(function (error) {
+        // TODO: handle error in a better way.. Transactions would be nice
+        //console.log(error);
+      });
+
+  }
+
+});
+
+// send notification to admin of new guest status
+GuestSchema.post('save', function (guest) {
+
+  if (this.sendAdminEmail && process.env.NODE_ENV !== 'test')
+    mailer.sendGuestActionEmail(this.parent().admin, function(error){
+      // TODO: Handle error if exists
+    });
+
+});
+
+// TODO: for some reason remove pre-hook is not working
+// remove invitation when guest is removed
 GuestSchema.post("remove", function(guest) {
 
   User.

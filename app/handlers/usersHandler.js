@@ -1,5 +1,6 @@
 var jwt = require("jsonwebtoken"),
   config = require("../../config").config(),
+  Event = require("../models/event"),
   User = require("../models/user");
 
 var secret_token = config.secret;
@@ -217,13 +218,79 @@ function updateCurrentUser(req, res) {
     user.lastname = req.body.lastname
   }
 
-  user.save(function(err, updatedUser){
-    if (err) return res.status(400).send(err);
-    res.json({
-      message: "User updated!",
-      user: updatedUser.asJson()
+  if (req.body.action === 'attend' && req.body.event) {
+    var invitation = user.invitations.find(function (invitation) {
+      return invitation.event.toString() === req.body.event;
     });
-  });
+    if (invitation)
+      invitation.attend();
+  }
+
+  if (req.body.action === 'decline' && req.body.event) {
+    var invitation = user.invitations.find(function (invitation) {
+      return invitation.event.toString() === req.body.event;
+    });
+    if (invitation)
+      invitation.decline();
+  }
+
+  return user.save().
+    then(function (updatedUser) {
+      // update staus in events collection
+      if (req.body.action)
+        return Event.
+          findOne({
+            _id: invitation.event,
+            // TODO: this filter is not working
+            'guests.user': req.current_user._id
+          }).
+          populate({
+            // get admin data so we can access to it in the guest post-hook
+            path: 'admin'
+          }).
+          select({
+            guests: 1,
+            admin: 1
+          }).
+          exec().
+          then(function (event) {
+            // it brings all the guests, pick the one our user is
+            var i = event.guests.findIndex(function (guest) {
+              return req.current_user._id.toString() == guest.user.toString();
+            });
+            event.guests[i].status.answered = true;
+            if (req.body.action == 'attend')
+              event.guests[i].status.attending = true;
+            else
+              event.guests[i].status.attending = false;
+
+            return event.save();
+          });
+      else
+        return updatedUser;
+    }).
+    then (function (updatedUser) {
+      if (req.body.action)
+        res.json({
+          message: "New status saved!"
+        });
+      else
+        res.json({
+          message: "User updated!",
+          user: updatedUser.asJson()
+        });
+    }).
+    catch(function(error) {
+      return res.status(400).send(error);
+    });
+
+
+
+    // TODO: this should be after save
+    // update event status
+/*
+*/
+
 }
 
 /**
@@ -301,6 +368,12 @@ function getEventAdminList(req, res) {
         _id: 1,
         title: 1,
         description: 1,
+        date: 1
+      },
+      match: {
+        date: { $gte: Date.now() }
+      },
+      sort: {
         date: 1
       }
     }).

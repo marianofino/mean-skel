@@ -114,7 +114,8 @@ UserSchema.methods.asJson = function() {
                 email: user.email,
                 firstname: user.firstname,
                 lastname: user.lastname,
-                picture: user.picture
+                picture: user.picture,
+                invitations: user.invitations
               }
   return response_user;
 };
